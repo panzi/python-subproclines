@@ -9,7 +9,7 @@ __all__ = ['subprocchunks', 'subproclines', 'STDOUT', 'STDERR', 'parallel_lines'
 
 BUFSIZ = 1024 * 4
 
-def xpoll_parallel_reader(streams, poll, POLLIN, POLLHUP, buffer_size=BUFSIZ):
+def parallel_reader_xpoll(streams, poll, POLLIN, POLLHUP, buffer_size=BUFSIZ):
 	if buffer_size < 1:
 		raise ValueError("buffer size must be >= 1")
 
@@ -38,15 +38,15 @@ def xpoll_parallel_reader(streams, poll, POLLIN, POLLHUP, buffer_size=BUFSIZ):
 			break
 
 def parallel_read_epoll(streams,buffer_size=BUFSIZ):
+	poll = select.epoll()
 	try:
-		poll = select.epoll()
-		for item in xpoll_parallel_reader(streams, poll, EPOLLIN, EPOLLHUP, buffer_size):
+		for item in parallel_reader_xpoll(streams, poll, EPOLLIN, EPOLLHUP, buffer_size):
 			yield item
 	finally:
 		poll.close()
 
 def parallel_read_poll(streams,buffer_size=BUFSIZ):
-	return xpoll_parallel_reader(streams, select.poll(), POLLIN, POLLHUP, buffer_size)
+	return parallel_reader_xpoll(streams, select.poll(), POLLIN, POLLHUP, buffer_size)
 
 def parallel_read_select(streams,buffer_size=BUFSIZ):
 	rlist = []
