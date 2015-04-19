@@ -5,6 +5,8 @@ from fcntl import fcntl, F_GETFL, F_SETFL
 from os import O_NONBLOCK, read
 from collections import defaultdict
 
+__all__ = ['subprocchunks', 'subproclines', 'STDOUT', 'STDERR', 'parallel_lines', 'parallel_read']
+
 BUFSIZ = 1024 * 4
 
 def xpoll_parallel_reader(streams, poll, POLLIN, POLLHUP, buffer_size=BUFSIZ):
@@ -35,7 +37,7 @@ def xpoll_parallel_reader(streams, poll, POLLIN, POLLHUP, buffer_size=BUFSIZ):
 		if not got_data:
 			break
 
-def epoll_parallel_reader(streams,buffer_size=BUFSIZ):
+def parallel_read_epoll(streams,buffer_size=BUFSIZ):
 	try:
 		poll = select.epoll()
 		for item in xpoll_parallel_reader(streams, poll, EPOLLIN, EPOLLHUP, buffer_size):
@@ -43,10 +45,10 @@ def epoll_parallel_reader(streams,buffer_size=BUFSIZ):
 	finally:
 		poll.close()
 
-def poll_parallel_reader(streams,buffer_size=BUFSIZ):
+def parallel_read_poll(streams,buffer_size=BUFSIZ):
 	return xpoll_parallel_reader(streams, select.poll(), POLLIN, POLLHUP, buffer_size)
 
-def select_parallel_reader(streams,buffer_size=BUFSIZ):
+def parallel_read_select(streams,buffer_size=BUFSIZ):
 	rlist = []
 	wlist = []
 	xlist = []
@@ -73,13 +75,13 @@ def select_parallel_reader(streams,buffer_size=BUFSIZ):
 			break
 
 if hasattr(select,'epoll'):
-	parallel_reader = epoll_parallel_reader
+	parallel_read = parallel_read_epoll
 elif hasattr(select,'poll'):
-	parallel_reader = poll_parallel_reader
+	parallel_read = parallel_read_poll
 else:
-	parallel_reader = select_parallel_reader
+	parallel_read = parallel_read_select
 
-def lines(parallel_streams):
+def parallel_lines(parallel_streams):
 	buffers = defaultdict(list)
 	
 	for i, chunk in parallel_streams:
@@ -133,7 +135,7 @@ STDERR = 1
 
 def subprocchunks(args,buffer_size=BUFSIZ):
 	proc = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	return parallel_reader([proc.stdout,proc.stderr],buffer_size)
+	return parallel_read([proc.stdout,proc.stderr],buffer_size)
 
 def subproclines(args,buffer_size=BUFSIZ):
-	return lines(subprocchunks(args,buffer_size))
+	return parallel_lines(subprocchunks(args,buffer_size))
