@@ -8,13 +8,15 @@ threads. Supports Python 2 and 3.
 
 #### Example Usage:
 
-	from __future__ import print_function
-	import subproclines
+```python
+from __future__ import print_function
+import subproclines
 
-	for what, line in subproclines(["./example.sh"]):
-		print('%s: %r' % (
-			'STDOUT' if what == subproclines.STDOUT else 'STDERR',
-			line))
+for what, line in subproclines(["./example.sh"]):
+	print('%s: %r' % (
+		'STDOUT' if what == subproclines.STDOUT else 'STDERR',
+		line))
+```
 
 MIT License
 -----------
